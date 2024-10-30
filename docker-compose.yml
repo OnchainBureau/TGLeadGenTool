@@ -1,0 +1,29 @@
+services:
+  telegram_controller:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.linux
+    volumes:
+      - type: bind
+        source: ./instances
+        target: /app/instances
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/telegram_db
+      - INSTANCE_IDS=56937386202,56937481408,56986426330
+      - TARGET_CHANNEL=https://t.me/trendingsgambleevents
+      - MESSAGE_TEMPLATE=Hello! I'm interested in this group.
+      - CLIENT_COUNT=3
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: telegram_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
