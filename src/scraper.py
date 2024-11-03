@@ -2,6 +2,7 @@ import asyncio
 from typing import List
 from .telegram_instance import TelegramInstance
 from .database import Database
+from .display_manager import DisplayManager
 import logging
 import os
 from pathlib import Path
@@ -11,6 +12,7 @@ class TelegramScraper:
         self.db = Database()
         self.target_channel = os.getenv('TARGET_CHANNEL')
         self.message_template = os.getenv('MESSAGE_TEMPLATE', "Hello! I'm interested in this group.")
+        self.display_manager = DisplayManager()  # Add this line
         self.clients = self._setup_clients()
 
     def _setup_clients(self) -> List[TelegramInstance]:
@@ -22,10 +24,19 @@ class TelegramScraper:
         for i in range(client_count):
             instance_id = instance_ids[i]
             instance_path = Path(f"/app/instances/{instance_id}")
-            client = TelegramInstance(instance_path=instance_path, display_number=i)
+            # Updated to use display_manager instead of display_number
+            client = TelegramInstance(
+                instance_path=instance_path,
+                display_manager=self.display_manager
+            )
             clients.append(client)
 
         return clients
+    
+    def __del__(self):
+        """Cleanup display manager when scraper is destroyed."""
+        if hasattr(self, 'display_manager'):
+            self.display_manager.cleanup()
 
     async def process_groups(self):
         """Main processing logic."""

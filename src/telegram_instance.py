@@ -4,33 +4,36 @@ import logging
 import os
 from pathlib import Path
 from subprocess import Popen, PIPE
+from .display_manager import DisplayManager
 
 class TelegramInstance:
-    def __init__(self, instance_path: Path, display_number: int):
+    def __init__(self, instance_path: Path, display_manager: DisplayManager):
         self.instance_path = instance_path
         self.exe_path = instance_path / "Telegram"
         self.tdata_path = instance_path / "tdata"
         self.process = None
-        self.display_number = display_number
-        self.display = f":{self.display_number}"
+        self.display_manager = display_manager
+        self.display = self.display_manager.get_display(instance_path.name)
 
     def start(self):
-        """Start Telegram instance using a virtual display."""
+        """Start the Telegram instance."""
+        if self.display is None:
+            logging.error(f"No display available for instance {self.instance_path.name}")
+            return False
+
         try:
-            # Start Telegram Desktop on a specific display
+            env = os.environ.copy()
+            env['DISPLAY'] = self.display
+            
             self.process = Popen(
                 [str(self.exe_path)],
-                env={**os.environ, "DISPLAY": self.display},
-                stdout=PIPE,
-                stderr=PIPE
+                env=env,
+                cwd=str(self.instance_path)
             )
-            logging.info(f"Starting Telegram on display {self.display}")
-            # Wait for Telegram to launch
-            time.sleep(10)  # Adjust as needed
-            logging.info(f"Started Telegram instance: {self.instance_path.name} on display {self.display}")
+            logging.info(f"Started Telegram instance {self.instance_path.name} on display {self.display}")
             return True
         except Exception as e:
-            logging.error(f"Failed to start Telegram instance {self.instance_path.name}: {e}")
+            logging.error(f"Failed to start Telegram instance: {e}")
             return False
 
     def navigate_to_group(self, group_link: str):
@@ -104,8 +107,7 @@ class TelegramInstance:
             return False
 
     def stop(self):
-        """Stop Telegram instance."""
+        """Stop the Telegram instance."""
         if self.process:
             self.process.terminate()
             self.process = None
-            logging.info(f"Stopped Telegram instance: {self.instance_path.name} on display {self.display}")

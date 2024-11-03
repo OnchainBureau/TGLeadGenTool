@@ -7,12 +7,16 @@ services:
       - type: bind
         source: ./instances
         target: /app/instances
+      - /tmp/.X11-unix:/tmp/.X11-unix
     environment:
+      - DISPLAY=:99
       - DATABASE_URL=postgresql://user:password@db:5432/telegram_db
       - INSTANCE_IDS=56937386202,56937481408,56986426330
       - TARGET_CHANNEL=https://t.me/trendingsgambleevents
       - MESSAGE_TEMPLATE=Hello! I'm interested in this group.
       - CLIENT_COUNT=3
+      - HOST=localhost
+    privileged: true  # This might be needed for X11
     depends_on:
       - db
 
